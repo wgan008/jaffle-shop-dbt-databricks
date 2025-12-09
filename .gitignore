@@ -3,3 +3,10 @@ target/
 dbt_modules/
 logs/
 **/.DS_Store
+
+# Databricks Asset Bundle artifacts
+.databricks/
+.bundle/
+
+# Python virtual environment
+venv/

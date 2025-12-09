@@ -1,0 +1,51 @@
+# Databricks Asset Bundle configuration for dbt jaffle_shop project
+bundle:
+  name: jaffle-shop-dbt
+
+include:
+  - resources/*.yml
+  - resources/*/*.yml
+
+# Workspace configuration
+workspace:
+  host: https://e2-demo-field-eng.cloud.databricks.com
+
+# Variables that can be overridden
+variables:
+  catalog:
+    description: Unity Catalog name
+    default: vera_demo_suite
+
+  schema:
+    description: Schema/database name
+    default: jaffle_shop_${workspace.current_user.short_name}
+
+  warehouse_id:
+    description: SQL Warehouse ID for dbt execution
+    default: 862f1d757f0424f7
+
+  git_url:
+    description: Git repository URL
+    default: https://github.com/wgan008/jaffle-shop-dbt-databricks.git
+
+  git_branch:
+    description: Git branch to clone
+    default: main
+
+# Targets for different environments
+targets:
+  dev:
+    mode: development
+    workspace:
+      root_path: ~/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      schema: jaffle_shop_dev_${workspace.current_user.short_name}
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/.bundles/${bundle.name}/${bundle.target}
+    variables:
+      schema: jaffle_shop_prod
+    run_as:
+      service_principal_name: 2cec1def-8a91-41e9-a85c-4a1920419ac3

@@ -1,0 +1,79 @@
+# Resources to deploy
+resources:
+  jobs:
+    jaffle_shop_dbt_job:
+      name: "Jaffle Shop dbt - ${bundle.target}"
+      description: "dbt job to run Jaffle Shop transformations from Git"
+
+      # Job configuration
+      max_concurrent_runs: 1
+      timeout_seconds: 3600
+
+      # Git source configuration
+      git_source:
+        git_url: ${var.git_url}
+        git_branch: ${var.git_branch}
+        git_provider: gitHub
+
+      # Email notifications (optional - update with your email)
+      email_notifications:
+        on_failure:
+          - ${workspace.current_user.userName}
+
+      # Job schedule (optional - runs daily at 2 AM)
+      schedule:
+        quartz_cron_expression: "0 0 2 * * ?"
+        timezone_id: "UTC"
+        pause_status: UNPAUSED
+
+      tasks:
+        - task_key: dbt_seed
+          description: "Load seed data"
+          environment_key: serverless_dbt_env
+
+          dbt_task:
+            project_directory: .
+            profiles_directory: dbt_profiles/
+            commands:
+              - "dbt seed"
+            warehouse_id: ${var.warehouse_id}
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+
+        - task_key: dbt_run
+          description: "Run dbt models"
+          environment_key: serverless_dbt_env
+          depends_on:
+            - task_key: dbt_seed
+
+          dbt_task:
+            project_directory: .
+            profiles_directory: dbt_profiles/
+            commands:
+              - "dbt run"
+            warehouse_id: ${var.warehouse_id}
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+
+        - task_key: dbt_test
+          description: "Test dbt models"
+          environment_key: serverless_dbt_env
+          depends_on:
+            - task_key: dbt_run
+
+          dbt_task:
+            project_directory: .
+            profiles_directory: dbt_profiles/
+            commands:
+              - "dbt test"
+            warehouse_id: ${var.warehouse_id}
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+
+      # Serverless compute environment
+      environments:
+        - environment_key: serverless_dbt_env
+          spec:
+            dependencies:
+              - dbt-core==1.10.15
+              - dbt-databricks>=1.8.0,<2.0.0
